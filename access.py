@@ -1,0 +1,2 @@
+CHAT_TYPE = ['private']
+ACCESS_USER = [5125774016]
