@@ -27,6 +27,7 @@ class Question(Base):
     
 class CfgGroup(Base):
     __tablename__ = 'cfg_group'
+    tid: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
     cfg_fk: Mapped[int] = mapped_column(ForeignKey('configurations.tid'))
     group_fk: Mapped[int] = mapped_column(ForeignKey('difficults.tid'))
 

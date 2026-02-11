@@ -22,7 +22,7 @@ dp = Dispatcher()
 dp.message.filter(ChatFilter(['private']), AdminFilter())
 
 async def on_startup(bot):
-    await drop_db()
+    await create_db()
 
 async def main():
     dp.include_router(router)
