@@ -8,3 +8,7 @@ class AddAsk(StatesGroup):
     difflvl= State()
     body = State()
     
+class AddCfg(StatesGroup):
+    cfg = State()
+    quest = State()
+    is_end = State()
