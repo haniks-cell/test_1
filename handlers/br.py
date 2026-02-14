@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 from aiogram import Bot, Dispatcher, F, Router, types
 from aiogram.filters.command import Command, CommandObject, CommandStart
 from aiogram.types import ReplyKeyboardRemove
@@ -14,7 +15,7 @@ from FSM.br_fsm import AddGroup, AddAsk, AddCfg
 from database.models import Group, Question, Configuration
 from keybords.keyboards import repkeyb, inlkeyb, create_inline, startkb, create_reply
 from keybords.br import startbr, diffkb, is_endkb
-# from logic.br import generate_cfg
+import logic.br as lgk
 
 # from logic.br 
 
@@ -175,17 +176,81 @@ async def getcfg (callback: types.CallbackQuery, state: FSMContext, session: Asy
 async def gencfg (callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     key = int(callback.data.split('_')[-1])
     print(key)
-    query = select(Configuration).where(Configuration.tid == key).options(joinedload(Configuration.grp))
+    query = select(Configuration).where(Configuration.tid == key).options(
+        joinedload(Configuration.grp).joinedload(Group.quest)
+        )
     res = await session.execute(query)
     result = res.scalar()
-
+    numarr = []
+    strquest = ''
+    cnt = 0
     arrgroup = result.grp
     outstr = ''
-    print(result.grp[0].quest)
+    temparr = [] # превращаю строку в двумерный массив инт
+    for i in result.cntquest:
+        for j in i[1]:
+            temparr.append(int(j))
+        numarr.append(temparr)
+        temparr = []
+    # print(numarr)
+
+    # [
+    #     [1,1,3],
+    #     [2,2,1]
+    # ]
+    unicnumarr:list[list[int]] = []
+    for i in numarr:
+        unicnumarr.append(list(set(i)))
+    numrange:list[int] = [x for x in range(1,6)]
+    cnt = 0 
+    jskey = []
+    ajskey = []
+    # for i in arrgroup:
     for i in range(len(arrgroup)):
-        # for j in arrgroup[0].quest:
-        #     print(f'{j.body} {j.difflvl}')
-        outstr += arrgroup[i].name + ' ' + result.cntquest[i][1] + '\n'
+        for j in numrange:
+            jskey.append([q.body for q in arrgroup[i].quest if q.difflvl == j])
+        ajskey.append(jskey)
+        jskey = []
+    # lgk.viewarr(ajskey)
+    out = []
+    pageout = []
+    for i in range(len(unicnumarr)):
+        pageout.append(arrgroup[i].name)
+        for j in unicnumarr[i]:
+           pageout.append(random.sample(ajskey[i][j-1], numarr[i].count(j)))
+        out.append(pageout)
+        pageout = []
     
+
+
+    # jskey = [] #делает вопросы формата боди и лвл
+    # alljskey = []
+    # for i in arrgroup:
+    #     for j in i.quest:
+    #         jskey.append([j.body, j.difflvl])
+    #     alljskey.append(jskey)
+    #     jskey = []
+    # filtered_dataall = []
+    # for i in numarr:
+    #     for el in i:
+    #         filtered_data = [x for x in jskey if x[1] == el]
+    #         print(filtered_data, el)
+    #     filtered_dataall.append(filtered_data)
+    #     filtered_data = []
+
+
+    # print(result.grp[0].quest)
+    # for i in range(len(arrgroup)):
+    #     strquest = ''
+    #     cnt = 0
+    #     for j in arrgroup[i].quest:
+    #         cnt += 1
+    #         strquest += f'\n {cnt}. {j.body} {j.difflvl}'
+    #     outstr += arrgroup[i].name + ' ' + result.cntquest[i][1] + strquest + '\n'
+    
+
+    # for i in range(len(arrgroup)):
+    #     result.cntquest[i][1]
+
     await callback.answer('')
-    await callback.message.answer(outstr)
+    await callback.message.answer(await lgk.viewarr(out))
