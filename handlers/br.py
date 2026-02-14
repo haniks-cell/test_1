@@ -14,6 +14,7 @@ from FSM.br_fsm import AddGroup, AddAsk, AddCfg
 from database.models import Group, Question, Configuration
 from keybords.keyboards import repkeyb, inlkeyb, create_inline, startkb, create_reply
 from keybords.br import startbr, diffkb, is_endkb
+# from logic.br import generate_cfg
 
 # from logic.br 
 
@@ -84,13 +85,23 @@ async def inpBody (message: types.Message, session: AsyncSession, state: FSMCont
     await message.answer('Выберите действие', reply_markup=startbr)
 
 @router.callback_query(StateFilter(None), F.data == 'br_addcfg')
-async def addcfg (callback: types.CallbackQuery, session: AsyncSession, state: FSMContext):
+async def addcfg (callback: types.CallbackQuery, state: FSMContext):
+    # query = select(Group)
+    # res = await session.execute(query)
+    # result = res.unique().scalars().all()
+    # await state.update_data(res=result)
+    await state.set_state(AddCfg.assos)
+    await callback.message.answer('Введите название конфига', reply_markup=ReplyKeyboardRemove())
+
+@router.message(AddCfg.assos)
+async def addasos (message: types.Message, state: FSMContext, session: AsyncSession):
+    await state.update_data(assos=message.text)
+    await state.set_state(AddCfg.cfg)
     query = select(Group)
     res = await session.execute(query)
     result = res.unique().scalars().all()
     await state.update_data(res=result)
-    await state.set_state(AddCfg.cfg)
-    await callback.message.answer('Выбирете группу', reply_markup=await create_reply(result))
+    await message.answer('Выбирете группу', reply_markup=await create_reply(result))
 
 @router.message(AddCfg.cfg)
 async def cfg (message: types.Message, state: FSMContext):
@@ -139,8 +150,9 @@ async def quest_cfg (message: types.Message, state: FSMContext, session: AsyncSe
         res = await session.execute(query)
         result = res.unique().scalars().all()
 
-        cf = Configuration(cntquest=arrout)
-        cf.grp.append(result)
+        cf = Configuration(assos=data["assos"], cntquest=arrout)
+        for i in result:
+            cf.grp.append(i)
         session.add(cf)
         await session.commit()
 
@@ -149,3 +161,31 @@ async def quest_cfg (message: types.Message, state: FSMContext, session: AsyncSe
     elif message.text == 'Продолжить':
         await state.set_state(AddCfg.cfg)
         await message.answer('Выбирете группу', reply_markup=await create_reply(data["res"]))
+
+@router.callback_query(StateFilter(None), F.data == 'br_getshb')
+async def getcfg (callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    # await state.set_state(AddCfg.assos)
+    query = select(Configuration)
+    res = await session.execute(query)
+    result = res.unique().scalars().all()
+    await callback.answer('')
+    await callback.message.answer('Выберите название конфига', reply_markup=await create_inline(result))
+
+@router.callback_query(StateFilter(None), F.data.startswith('br_genshb_'))
+async def gencfg (callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    key = int(callback.data.split('_')[-1])
+    print(key)
+    query = select(Configuration).where(Configuration.tid == key).options(joinedload(Configuration.grp))
+    res = await session.execute(query)
+    result = res.scalar()
+
+    arrgroup = result.grp
+    outstr = ''
+    print(result.grp[0].quest)
+    for i in range(len(arrgroup)):
+        # for j in arrgroup[0].quest:
+        #     print(f'{j.body} {j.difflvl}')
+        outstr += arrgroup[i].name + ' ' + result.cntquest[i][1] + '\n'
+    
+    await callback.answer('')
+    await callback.message.answer(outstr)

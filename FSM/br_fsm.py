@@ -9,6 +9,7 @@ class AddAsk(StatesGroup):
     body = State()
     
 class AddCfg(StatesGroup):
+    assos = State()
     cfg = State()
     quest = State()
     is_end = State()

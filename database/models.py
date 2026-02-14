@@ -37,6 +37,7 @@ class CfgGroup(Base):
 class Configuration(Base):
     __tablename__ = "configurations"
     tid: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    assos: Mapped[str] = mapped_column(String(40))
     cntquest: Mapped[List[List[str]]] = mapped_column(
         ARRAY(String, dimensions=2)
     )
