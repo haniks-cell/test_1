@@ -174,6 +174,7 @@ async def getcfg (callback: types.CallbackQuery, state: FSMContext, session: Asy
 
 @router.callback_query(StateFilter(None), F.data.startswith('br_genshb_'))
 async def gencfg (callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    #Запрос в бд=============================================================
     key = int(callback.data.split('_')[-1])
     print(key)
     query = select(Configuration).where(Configuration.tid == key).options(
@@ -186,32 +187,28 @@ async def gencfg (callback: types.CallbackQuery, state: FSMContext, session: Asy
     cnt = 0
     arrgroup = result.grp
     outstr = ''
-    temparr = [] # превращаю строку в двумерный массив инт
+    temparr = [] 
+    # превращаю строку в двумерный массив инт==============================================
     for i in result.cntquest:
         for j in i[1]:
             temparr.append(int(j))
         numarr.append(temparr)
         temparr = []
-    # print(numarr)
-
-    # [
-    #     [1,1,3],
-    #     [2,2,1]
-    # ]
+    #Выбираем уникальные значения=================================================================
     unicnumarr:list[list[int]] = []
     for i in numarr:
         unicnumarr.append(list(set(i)))
+    #формируем из вопросов бд по сложности и группам =========================================================================================================
     numrange:list[int] = [x for x in range(1,6)]
     cnt = 0 
     jskey = []
     ajskey = []
-    # for i in arrgroup:
     for i in range(len(arrgroup)):
         for j in numrange:
             jskey.append([q.body for q in arrgroup[i].quest if q.difflvl == j])
         ajskey.append(jskey)
         jskey = []
-    # lgk.viewarr(ajskey)
+    #Формируем по паттерну шаблон================================================================================
     out = []
     pageout = []
     for i in range(len(unicnumarr)):
@@ -220,37 +217,6 @@ async def gencfg (callback: types.CallbackQuery, state: FSMContext, session: Asy
            pageout.append(random.sample(ajskey[i][j-1], numarr[i].count(j)))
         out.append(pageout)
         pageout = []
-    
-
-
-    # jskey = [] #делает вопросы формата боди и лвл
-    # alljskey = []
-    # for i in arrgroup:
-    #     for j in i.quest:
-    #         jskey.append([j.body, j.difflvl])
-    #     alljskey.append(jskey)
-    #     jskey = []
-    # filtered_dataall = []
-    # for i in numarr:
-    #     for el in i:
-    #         filtered_data = [x for x in jskey if x[1] == el]
-    #         print(filtered_data, el)
-    #     filtered_dataall.append(filtered_data)
-    #     filtered_data = []
-
-
-    # print(result.grp[0].quest)
-    # for i in range(len(arrgroup)):
-    #     strquest = ''
-    #     cnt = 0
-    #     for j in arrgroup[i].quest:
-    #         cnt += 1
-    #         strquest += f'\n {cnt}. {j.body} {j.difflvl}'
-    #     outstr += arrgroup[i].name + ' ' + result.cntquest[i][1] + strquest + '\n'
-    
-
-    # for i in range(len(arrgroup)):
-    #     result.cntquest[i][1]
 
     await callback.answer('')
     await callback.message.answer(await lgk.viewarr(out))
